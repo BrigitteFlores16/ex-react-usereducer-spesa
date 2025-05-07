@@ -35,3 +35,10 @@ button {
 button:hover {
   background-color: #6765c7;
 }
+input {
+  width: 30px;
+  padding: 5px;
+  text-align: center;
+  border: 1px solid #ddd;
+  margin: 0 10px;
+}

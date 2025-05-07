@@ -7,33 +7,39 @@ const products = [
   { name: "Pasta", price: 0.7 },
 ];
 
-function ProductList() {
-  const [addedProducts, setAddedProducts] = useState([]);
+const cartReducer = (state, action) => {
+  switch (action.type) {
+    case "ADD_ITEM":
+      const existingProduct = state.find((p) => p.name === action.payload.name);
+      if (existingProduct) {
+        return state.map((p) =>
+          p.name === action.payload.name
+            ? { ...p, quantity: p.quantity + 1 }
+            : p
+        );
+      }
+      return [...state, { ...action.payload, quantity: 1 }];
 
-  const addToCart = (product) => {
-    const existingProduct = addedProducts.find((p) => p.name === product.name);
+    case "REMOVE_ITEM":
+      return state.filter((product) => product.name !== action.payload);
 
-    if (existingProduct) {
-      setAddedProducts(
-        addedProducts.map((p) =>
-          p.name === product.name ? { ...p, quantity: p.quantity + 1 } : p
-        )
+    case "UPDATE_QUANTITY":
+      return state.map((product) =>
+        product.name === action.payload.name
+          ? {
+              ...product,
+              quantity: Math.max(1, Math.floor(action.payload.quantity)),
+            }
+          : product
       );
-    } else {
-      setAddedProducts([...addedProducts, { ...product, quantity: 1 }]);
-    }
-  };
 
-  const removeFromCart = (productName) => {
-    setAddedProducts(
-      addedProducts.filter((product) => product.name !== productName)
-    );
-  };
+    default:
+      return state;
+  }
+};
 
-  const totalPrice = addedProducts.reduce(
-    (total, product) => total + product.price * product.quantity,
-    0
-  );
+function ProductList() {
+  const [cart, dispatch] = useReducer(cartReducer, []);
 
   return (
     <div>
@@ -42,28 +48,52 @@ function ProductList() {
         {products.map((product, index) => (
           <li key={index}>
             <strong>{product.name}</strong>: €{product.price.toFixed(2)}
-            <button onClick={() => addToCart(product)}>
+            <button
+              onClick={() => dispatch({ type: "ADD_ITEM", payload: product })}
+            >
               Aggiungi al carrello
             </button>
           </li>
         ))}
       </ul>
 
-      {addedProducts.length > 0 && (
+      {cart.length > 0 && (
         <div>
           <h3>Carrello</h3>
           <ul>
-            {addedProducts.map((product, index) => (
+            {cart.map((product, index) => (
               <li key={index}>
                 <strong>{product.name}</strong>: €{product.price.toFixed(2)}
-                (Quantità: {product.quantity})
-                <button onClick={() => removeFromCart(product.name)}>
+                <input
+                  type="number"
+                  value={product.quantity}
+                  min="1"
+                  onChange={(e) =>
+                    dispatch({
+                      type: "UPDATE_QUANTITY",
+                      payload: { name: product.name, quantity: e.target.value },
+                    })
+                  }
+                />
+                <button
+                  onClick={() =>
+                    dispatch({ type: "REMOVE_ITEM", payload: product.name })
+                  }
+                >
                   Rimuovi
                 </button>
               </li>
             ))}
           </ul>
-          <h3>Totale: €{totalPrice.toFixed(2)}</h3>
+          <h3>
+            Totale da pagare: €
+            {cart
+              .reduce(
+                (total, product) => total + product.price * product.quantity,
+                0
+              )
+              .toFixed(2)}
+          </h3>
         </div>
       )}
     </div>
